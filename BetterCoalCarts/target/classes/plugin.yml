@@ -1,0 +1,4 @@
+name: BetterCoalCarts
+version: '1.0-SNAPSHOT'
+main: org.firez.bettercoalcarts.BetterCoalCarts
+api-version: '1.19'
