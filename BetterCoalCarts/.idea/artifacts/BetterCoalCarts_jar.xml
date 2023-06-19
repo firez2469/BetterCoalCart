@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="BetterCoalCarts:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/BetterCoalCarts_jar</output-path>
+    <root id="archive" name="BetterCoalCarts.jar">
+      <element id="module-output" name="BetterCoalCarts" />
+    </root>
+  </artifact>
+</component>
