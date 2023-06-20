@@ -10,3 +10,6 @@ A Furnace cart will move slower than a player can run. So this plugin works to f
 Furnace carts will "grab" any minecarts that are behind it and move it in sync with the furnace cart. This happens only when the furnace cart is powered AND on rails. If a turn or incline approaches, it will stop grabbing them until its past the turn/incline. It will try to re-grab the carts trailing behind, but may only manage to grab 1-2 carts.
 
 The range of this "grab" goes up to 3 blocks wide (1 block on each side of the track) and ~5-10 blocks along the track so make sure you do not put parallel rails within a block reach of high-speed track.
+
+## Installation
+Download the Jar from [Releases]("./releases") and add it to your plugins folder.
