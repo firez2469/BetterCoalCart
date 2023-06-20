@@ -12,4 +12,4 @@ Furnace carts will "grab" any minecarts that are behind it and move it in sync w
 The range of this "grab" goes up to 3 blocks wide (1 block on each side of the track) and ~5-10 blocks along the track so make sure you do not put parallel rails within a block reach of high-speed track.
 
 ## Installation
-Download the Jar from [Releases]("./releases") and add it to your plugins folder.
+Download the Jar from [Releases](https://github.com/firez2469/BetterCoalCart/releases) and add it to your plugins folder.
