@@ -1,6 +1,7 @@
 package org.firez.bettercoalcarts;
 
 import org.bukkit.*;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Rail;
 import org.bukkit.block.data.type.Stairs;
 import org.bukkit.entity.Entity;
@@ -22,7 +23,9 @@ import java.util.EventListener;
 
 public class MinecartEventListener implements Listener {
     private ArrayList<Minecart> carts = new ArrayList<>();
-    private int iteration = 0;
+    private ArrayList<LinkedCar> trainCars = new ArrayList<LinkedCar>();
+
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Bukkit.getLogger().info(ChatColor.GREEN+"Tracking "+event.getPlayer().getName()+"!");
@@ -95,6 +98,7 @@ public class MinecartEventListener implements Listener {
         Vehicle vehicle = event.getVehicle();
         Vector velocity = vehicle.getVelocity();
         Double mag = velocity.length();
+        //If this is a furnace cart then do speed operations if powered
         if(vehicle.getType()== EntityType.MINECART_FURNACE){
             if(!inCartList((Minecart)vehicle)){
                 this.carts.add((Minecart) vehicle);
@@ -108,33 +112,79 @@ public class MinecartEventListener implements Listener {
                 if(!isChange){
                     PoweredMinecart furnaceCart = (PoweredMinecart) vehicle;
                     if(furnaceCart.getFuel()>0){
-                        Bukkit.getLogger().info(event.getVehicle().getName()+" speed="+mag.toString());
                         ((PoweredMinecart) vehicle).setMaxSpeed(0.68D);
-                        vehicle.teleport(vehicle.getLocation().add(velocity));
-                        //furnaceCart.setVelocity(furnaceCart.getVelocity().multiply(5f));
-                        Bukkit.getLogger().info("PUSHING!");
+                        vehicle.teleport(vehicle.getLocation().add(velocity.multiply(1f)));
+                        vehicle.getLocation().add(velocity.multiply(20));
+                        int cartNum = 0;
+                        int maxCars = 5;
+                        ArrayList<Minecart> attached = new ArrayList<>();
+                        for(Minecart c: carts){
+                            if(c.getType()==EntityType.MINECART_FURNACE||furnaceCart.equals(c)){
+                                continue;
+                            }
+                            for(int i = 0; i<=maxCars*2;i++){
+                                Location vecLoc = vehicle.getLocation();
+
+                                Location loc = vecLoc.add(vehicle.getFacing().getOppositeFace().getDirection().multiply(i));
+                                if(c.getLocation().distance(loc)<=3f){
+                                    attached.add(c);
+                                    break;
+                                }
+                            }
+                        }
+                        Bukkit.getLogger().info("Attached:"+attached.size());
+                        for(Minecart c:attached){
+                            if(!furnaceCart.equals(c) && c.getType() != EntityType.MINECART_FURNACE) {
+                                cartNum++;
+                                Location teleportLoc = vehicle.getLocation().add(vehicle.getFacing().getOppositeFace().getDirection().multiply(2*cartNum));
+                                if(c.getPassengers().size()>0){
+                                    Entity e = c.getPassengers().get(0);
+                                    e.teleport(teleportLoc);
+                                    c.teleport(teleportLoc);
+                                    c.addPassenger(e);
+                                    c.setMaxSpeed(4f);
+                                    c.setVelocity(vehicle.getVelocity());
+
+                                }else{
+                                    c.teleport(teleportLoc);
+                                    c.setMaxSpeed(4f);
+                                    c.setVelocity(vehicle.getVelocity());
+                                }
+
+
+                            }
+                        }
                     }
+
                 }
             }
         }
-        else if(vehicle.getType()==EntityType.MINECART){
+        //If this is not a furnace cart then do attachment operations.
+        else if(vehicle.getType()==EntityType.MINECART&&false){
             Minecart cart = (Minecart) vehicle;
             if(!inCartList((Minecart)vehicle)){
                 this.carts.add((Minecart) vehicle);
             }
             for(Minecart c:carts){
-                /*if(!cart.equals(c) && c.getType() == EntityType.MINECART_FURNACE){
+                if(!cart.equals(c) && c.getType() == EntityType.MINECART_FURNACE&&c.getVelocity().length()>0){
                     Location c_loc = c.getLocation();
-                    Location _for = addVecToLoc(c.getWorld(),c_loc,c.getVelocity().normalize());
-                    Location _back = subVecToLoc(c.getWorld(),c_loc,c.getVelocity().normalize());
+                    Location _for = addVecToLoc(c.getWorld(),c_loc,c.getFacing().getDirection());
+                    Location _back = addVecToLoc(c.getWorld(),c_loc,c.getFacing().getOppositeFace().getDirection());
+                    double forDist = _for.distance(cart.getLocation());
+                    double backDist = _back.distance(cart.getLocation());
+                    Vector normalizedVelocity  = c.getVelocity().normalize();
+                    if(forDist<=3.0||backDist<=3.0){
+                        cart.teleport(c.getLocation().add(c.getFacing().getOppositeFace().getDirection()));
+                        Bukkit.getLogger().info("Velocity:"+c.getVelocity().toString());
+                        if(c.getVelocity().length()>0.3D){
+                            cart.teleport(c.getLocation());
+                        }
+                    }
+                    if(c.getVelocity().length()>0.3D){
+                        cart.teleport(c.getLocation().add(c.getFacing().getDirection().multiply(5)));
+                    }
 
-                    if(_for.distance(cart.getLocation()) <= 3.0){
-                        cart.teleport(_for.add(0, 0, 3.0)); // position the minecart 3 units in front of the furnace minecart
-                    }
-                    else if(_back.distance(cart.getLocation()) <= 3.0){
-                        cart.teleport(_back.subtract(0, 0, 3.0)); // position the minecart 3 units behind the furnace minecart
-                    }
-                }*/
+                }
             }
         }
     }
@@ -146,34 +196,40 @@ public class MinecartEventListener implements Listener {
             if (inCartList((Minecart) vehicle)) {
                 Bukkit.getLogger().info("REMOVED VEHICLE!");
                 this.carts.remove((Minecart) vehicle);
+
             }
         }
     }
     @EventHandler
     public void onVehicleUpdate(VehicleUpdateEvent event){
         Vehicle vehicle = event.getVehicle();
-        if(vehicle.getType()==EntityType.MINECART&&vehicle.getType()!=EntityType.MINECART_FURNACE){
+        if(vehicle.getType()==EntityType.MINECART&&vehicle.getType()!=EntityType.MINECART_FURNACE&&false){
             Minecart cart = (Minecart) vehicle;
             if(!inCartList((Minecart)vehicle)){
                 this.carts.add((Minecart) vehicle);
             }
             for(Minecart c:carts){
-                if(!cart.equals(c) && c.getType() == EntityType.MINECART_FURNACE){
+                if(!cart.equals(c) && c.getType() == EntityType.MINECART_FURNACE&&c.getVelocity().length()>0){
                     Location c_loc = c.getLocation();
                     Location _for = addVecToLoc(c.getWorld(),c_loc,c.getFacing().getDirection());
                     Location _back = addVecToLoc(c.getWorld(),c_loc,c.getFacing().getOppositeFace().getDirection());
                     double forDist = _for.distance(cart.getLocation());
                     double backDist = _back.distance(cart.getLocation());
+                    Vector normalizedVelocity  = c.getVelocity().normalize();
 
-                    if(forDist <= 3.0){
-                        //cart.teleport(_for);
-                        cart.teleport(_for.add(c.getVelocity().multiply(2)));
-                        //cart.teleport(_for.add(0, 0, 3)); // position the minecart 3 units in front of the furnace minecart
+
+                    if(forDist<=3.0||backDist<=6.0){
+                        cart.teleport(c.getLocation().add(c.getFacing().getOppositeFace().getDirection()));
+                        Bukkit.getLogger().info("Velocity:"+c.getVelocity().toString());
+                        if(c.getVelocity().length()>0.1D){
+                            cart.teleport(c.getLocation());
+                        }
                     }
-                    else if(backDist<=3.0){
-                        cart.teleport(_back.add(c.getVelocity().multiply(2)));
-                        //cart.teleport(_back.add(0, 0, 3)); // position the minecart 3 units behind the furnace minecart
+                    if(c.getVelocity().length()>0.3D){
+                        cart.teleport(c.getLocation().add(c.getFacing().getDirection().multiply(5)));
                     }
+
+
                 }
             }
         }
